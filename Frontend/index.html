@@ -1,0 +1,1236 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Comparateur de vols • SerpApi</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --primary: #0b5cff;
+      --primary-dark: #083fe5;
+      --text: #0f172a;
+      --muted: #6b7280;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --shadow: 0 30px 60px rgba(15,23,42,0.1);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 32px 20px 64px;
+      background: radial-gradient(circle at top, #dce8ff 0%, #f4f6fb 45%, #f7f8fc 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin: 0;
+    }
+    .hero p {
+      color: var(--muted);
+      margin: 0 auto;
+      max-width: 720px;
+      line-height: 1.5;
+    }
+    .badge-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: rgba(11,92,255,0.08);
+      color: var(--primary);
+      border: 1px solid rgba(11,92,255,0.2);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .search-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .search-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .search-header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    .small {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin: 0;
+    }
+    .field-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .input-with-picker {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    input, select {
+      margin-top: 6px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-size: 0.95rem;
+      background: #f9fafb;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .picker-btn {
+      position: absolute;
+      right: 8px;
+      background: rgba(11,92,255,0.12);
+      color: var(--primary);
+      border: none;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .picker-btn:hover {
+      background: rgba(11,92,255,0.22);
+      transform: translateY(-1px);
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(11,92,255,0.12);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .primary-btn {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 10px 25px rgba(11,92,255,0.25);
+    }
+    .primary-btn:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    .ghost-btn {
+      background: rgba(15,23,42,0.05);
+      color: var(--text);
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: 600;
+    }
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      background: rgba(15,23,42,0.05);
+    }
+    .status-chip.success { color: var(--success); background: rgba(22,163,74,0.08); }
+    .status-chip.error { color: var(--danger); background: rgba(220,38,38,0.08); }
+    .status-chip.loading { color: var(--primary); background: rgba(11,92,255,0.08); }
+
+    .results-wrapper {
+      margin-top: 32px;
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+      gap: 22px;
+    }
+    .flight-card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 50px rgba(15,23,42,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .price {
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+    .meta {
+      display: flex;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .tag {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,0.05);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .trip-dates {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(11,92,255,0.06);
+      border: 1px solid rgba(11,92,255,0.12);
+      font-size: 0.9rem;
+    }
+    .trip-dates-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 120px;
+    }
+    .trip-dates-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .trip-dates-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .trip-dates-divider {
+      width: 1px;
+      height: 36px;
+      background: rgba(15,23,42,0.15);
+    }
+    .segments {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    .card-actions {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+    .book-link {
+      color: #fff;
+      background: var(--primary);
+      padding: 10px 16px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      flex: 1;
+      text-align: center;
+    }
+    .book-link:hover {
+      background: var(--primary-dark);
+    }
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      background: var(--card);
+      border-radius: 24px;
+      border: 1px dashed var(--border);
+      color: var(--muted);
+      margin-top: 24px;
+    }
+    .empty-state strong {
+      color: var(--text);
+      display: block;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+    code {
+      background: rgba(15,23,42,0.08);
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .iata-modal {
+      background: var(--card);
+      border-radius: 22px;
+      width: min(640px, 100%);
+      max-height: 85vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+    }
+    .iata-modal header {
+      padding: 20px 24px 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .iata-modal h3 {
+      margin: 0;
+    }
+    .iata-modal .close-btn {
+      border: none;
+      background: rgba(15,23,42,0.08);
+      border-radius: 999px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+    .target-chips {
+      display: flex;
+      gap: 10px;
+      padding: 0 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .target-chip {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-weight: 600;
+      background: #fff;
+      cursor: pointer;
+      transition: border 0.2s, background 0.2s, color 0.2s;
+    }
+    .target-chip.active {
+      border-color: var(--primary);
+      background: rgba(11,92,255,0.1);
+      color: var(--primary);
+    }
+    .iata-modal .search-area {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .iata-modal .search-area input {
+      margin-top: 0;
+    }
+    .iata-list {
+      padding: 16px 24px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .iata-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: border 0.2s, transform 0.1s, background 0.2s;
+      text-align: left;
+      gap: 12px;
+    }
+    .iata-item:hover {
+      border-color: var(--primary);
+      background: rgba(11,92,255,0.05);
+      transform: translateY(-1px);
+    }
+    .iata-item strong {
+      font-size: 1.1rem;
+      display: block;
+    }
+    .iata-item span {
+      display: block;
+    }
+    .iata-empty {
+      padding: 40px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .stripe-modal {
+      background: var(--card);
+      border-radius: 22px;
+      width: min(520px, 100%);
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+    }
+    .stripe-modal header {
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .stripe-modal h3 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+    .stripe-modal .content {
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .quota-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(11,92,255,0.08);
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-top: 12px;
+    }
+    .stripe-modal .price-display {
+      text-align: center;
+      padding: 20px;
+      border-radius: 16px;
+      border: 2px solid rgba(11,92,255,0.2);
+      background: rgba(11,92,255,0.08);
+    }
+    .stripe-modal .price-display .amount {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 8px 0;
+    }
+    .stripe-modal .price-display .period {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .stripe-modal .benefits {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .stripe-modal .benefits li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+    }
+    .stripe-modal .benefits li::before {
+      content: "✓";
+      color: var(--success);
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+    .login-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .login-row input {
+      flex: 1;
+      margin-top: 0;
+    }
+    .login-row button {
+      border: none;
+      border-radius: 10px;
+      padding: 0 18px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .subscription-status {
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(15,23,42,0.05);
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .stripe-modal .cta-button {
+      width: 100%;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .stripe-modal .cta-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .modal-note {
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+      margin: 0;
+    }
+    .hidden {
+      display: none !important;
+    }
+    @media (max-width: 640px) {
+      .search-card { padding: 22px; }
+      .card-actions { flex-direction: column; }
+      .book-link { width: 100%; }
+      .stripe-modal { width: 95%; }
+      .login-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="hero">
+      <h1>Comparez vos vols en un clin d’œil</h1>
+      <p>Entrez vos codes IATA, vos dates et votre budget maximal pour obtenir une sélection claire des meilleures options disponibles. Filtrez, exportez en CSV et partez l’esprit léger. Nous sommes moins chers que kayak.com et plus rapide.</p>
+    </header>
+
+    <section class="search-card">
+      <div class="search-header">
+      <div>
+          <h2>Paramètres de recherche</h2>
+          <p class="small">Personnalisez la recherche avant de lancer l’appel API.</p>
+        </div>
+        <p class="small"><strong>Astuce :</strong> laissez <code>sort_by</code> vide pour l’ordre par défaut SerpApi.</p>
+      </div>
+
+      <div class="form-grid">
+        <div>
+          <div class="field-label-row">
+            <label for="departure">Départ (IATA)</label>
+            <button type="button" class="picker-btn" data-target="departure">Choisir</button>
+          </div>
+          <div class="input-with-picker">
+            <input id="departure" value="CDG" placeholder="Ex : CDG" />
+          </div>
+      </div>
+      <div>
+          <div class="field-label-row">
+            <label for="arrival">Arrivée (IATA ou code multi)</label>
+            <button type="button" class="picker-btn" data-target="arrival">Choisir</button>
+          </div>
+          <div class="input-with-picker">
+            <input id="arrival" value="LON" placeholder="Ex : LON" />
+          </div>
+      </div>
+      <div>
+          <label for="currency">Devise</label>
+          <select id="currency">
+            <option>USD</option>
+            <option selected>EUR</option>
+            <option>GBP</option>
+          </select>
+      </div>
+      <div>
+          <label for="outbound">Date départ</label>
+          <input id="outbound" type="date" />
+      </div>
+      <div>
+          <label for="return">Date retour</label>
+          <input id="return" type="date" />
+      </div>
+      <div>
+          <label for="maxprice">Prix max</label>
+        <input id="maxprice" type="number" value="2000" />
+      </div>
+      <div>
+          <label for="sortby">Sort_by (option)</label>
+          <input id="sortby" placeholder="Ex : 2" />
+      </div>
+      <div>
+          <label for="topn">Top N</label>
+        <input id="topn" type="number" value="10" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="searchBtn" class="primary-btn">🔍 Rechercher</button>
+        <button id="downloadBtn" class="ghost-btn" disabled>⬇️ Télécharger CSV</button>
+    </div>
+
+      <div id="status"></div>
+      <div id="quotaIndicator" class="quota-indicator"></div>
+    </section>
+
+    <section class="results-wrapper" id="results"></section>
+  </div>
+
+  <div class="modal-backdrop" id="iataModal">
+    <div class="iata-modal">
+      <header>
+        <div>
+          <h3>Choisir un code IATA</h3>
+          <p class="small">Cherchez par code, ville ou pays puis cliquez pour remplir le champ.</p>
+        </div>
+        <button class="close-btn" id="closeIataModal" aria-label="Fermer">✕</button>
+      </header>
+      <div class="target-chips">
+        <button class="target-chip active" type="button" data-target="departure" id="chipDeparture" aria-pressed="true">Départ</button>
+        <button class="target-chip" type="button" data-target="arrival" id="chipArrival" aria-pressed="false">Arrivée</button>
+      </div>
+      <div class="search-area">
+        <input id="iataSearch" type="text" placeholder="Rechercher (ex : Paris, FRA, Japon…)" />
+      </div>
+      <div class="iata-list" id="iataList"></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="stripeModal">
+    <div class="stripe-modal">
+      <header>
+        <h3>Débloquez les recherches illimitées</h3>
+        <button class="close-btn" id="closeStripeModal" aria-label="Fermer">✕</button>
+      </header>
+      <div class="content">
+        <div>
+          <label for="loginEmail">Connectez-vous pour retrouver votre abonnement</label>
+          <div class="login-row">
+            <input id="loginEmail" type="email" placeholder="vous@email.com" />
+            <button id="loginBtn" type="button">Se connecter</button>
+          </div>
+          <p class="modal-note">Aucun mot de passe — saisissez simplement votre email pour retrouver votre abonnement.</p>
+        </div>
+        <div id="subscriptionStatus" class="subscription-status"></div>
+        <div class="price-display" id="priceBlock">
+          <div class="small">Abonnement mensuel</div>
+          <div class="amount" id="subscriptionPrice">—</div>
+          <div class="period">par mois</div>
+        </div>
+        <ul class="benefits">
+          <li>Recherches illimitées</li>
+          <li>Export CSV sans restriction</li>
+          <li>Accès prioritaire aux nouvelles fonctionnalités</li>
+          <li>Support dédié</li>
+        </ul>
+        <button id="stripeCheckoutBtn" class="primary-btn cta-button" disabled>S'abonner maintenant</button>
+        <p class="modal-note">Paiement sécurisé par Stripe. Résiliable à tout moment.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiBase = "http://localhost:8000";
+    const FREE_LIMIT = 2;
+    const storageKeys = {
+      session: "flight_session_id",
+      userToken: "flight_user_token",
+      userEmail: "flight_user_email",
+      userSub: "flight_user_subscription"
+    };
+
+    // State management
+    const state = {
+      sessionId: initSessionId(),
+      user: {
+        token: localStorage.getItem(storageKeys.userToken),
+        email: localStorage.getItem(storageKeys.userEmail),
+        subscriptionActive: localStorage.getItem(storageKeys.userSub) === "true",
+        quotaRemaining: null
+      }
+    };
+
+    function initSessionId() {
+      let sessionId = localStorage.getItem(storageKeys.session);
+      if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        localStorage.setItem(storageKeys.session, sessionId);
+      }
+      return sessionId;
+    }
+
+    function updateQuotaIndicator() {
+      const indicator = document.getElementById("quotaIndicator");
+      if (!indicator) return;
+
+      if (state.user.subscriptionActive) {
+        indicator.textContent = "✅ Abonnement actif — recherches illimitées";
+        indicator.style.background = "rgba(22,163,74,0.12)";
+        indicator.style.color = "var(--success)";
+        return;
+      }
+
+      if (state.user.token) {
+        if (state.user.quotaRemaining != null) {
+          const rem = state.user.quotaRemaining;
+          indicator.textContent = rem > 0
+            ? `${rem} recherche${rem > 1 ? "s" : ""} gratuites restantes`
+            : "Quota gratuit épuisé — abonnez-vous pour continuer";
+        } else {
+          indicator.textContent = "Connecté — vérification du quota...";
+        }
+        indicator.style.background = "rgba(11,92,255,0.08)";
+        indicator.style.color = "var(--primary)";
+        return;
+      }
+
+      indicator.textContent = `${FREE_LIMIT} recherches gratuites disponibles`;
+      indicator.style.background = "rgba(11,92,255,0.08)";
+      indicator.style.color = "var(--primary)";
+    }
+
+    function openStripeModal() {
+      const modal = document.getElementById("stripeModal");
+      if (modal) modal.classList.add("open");
+      loadSubscriptionPrice();
+      updateSubscriptionStatus();
+    }
+
+    function closeStripeModal() {
+      const modal = document.getElementById("stripeModal");
+      if (modal) modal.classList.remove("open");
+    }
+
+    async function loadSubscriptionPrice() {
+      try {
+        const res = await fetch(`${apiBase}/billing/price`);
+        if (res.ok) {
+          const data = await res.json();
+          const priceEl = document.getElementById("subscriptionPrice");
+          if (priceEl) priceEl.textContent = data.formatted;
+        }
+      } catch (err) {
+        console.error("Failed to load price:", err);
+      }
+    }
+
+    async function handleLogin() {
+      const emailInput = document.getElementById("loginEmail");
+      if (!emailInput) return;
+      const email = emailInput.value.trim().toLowerCase();
+      if (!email || !email.includes("@")) {
+        showStatus("Email invalide", "error");
+        return;
+      }
+
+      try {
+        showStatus("Connexion en cours...", "loading");
+        const res = await fetch(`${apiBase}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          showStatus(`Erreur: ${text}`, "error");
+          return;
+        }
+
+        const data = await res.json();
+        state.user.token = data.token;
+        state.user.email = email;
+        state.user.subscriptionActive = data.subscription_active || false;
+        state.user.quotaRemaining = data.remaining;
+
+        localStorage.setItem(storageKeys.userToken, data.token);
+        localStorage.setItem(storageKeys.userEmail, email);
+        localStorage.setItem(storageKeys.userSub, String(data.subscription_active || false));
+
+        updateQuotaIndicator();
+        updateSubscriptionStatus();
+        updateQuotaIndicator();
+
+        if (state.user.subscriptionActive) {
+          showStatus("Abonnement retrouvé, vous pouvez fermer la modale.", "success");
+          setTimeout(() => closeStripeModal(), 400);
+        } else {
+          showStatus("Vous n'avez pas encore d'abonnement actif.", "error");
+        }
+      } catch (err) {
+        console.error(err);
+        showStatus(`Erreur: ${err.message}`, "error");
+      }
+    }
+
+    function updateSubscriptionStatus() {
+      const statusEl = document.getElementById("subscriptionStatus");
+      if (!statusEl) return;
+
+      if (state.user.subscriptionActive) {
+        statusEl.innerHTML = `
+          <div style="padding: 16px; background: rgba(22,163,74,0.1); border-radius: 12px; text-align: center; color: var(--success); font-weight: 600;">
+            ✅ Abonnement actif — Vous pouvez effectuer des recherches illimitées
+          </div>
+        `;
+        const checkoutBtn = document.getElementById("stripeCheckoutBtn");
+        if (checkoutBtn) checkoutBtn.disabled = true;
+        const priceBlock = document.getElementById("priceBlock");
+        if (priceBlock) priceBlock.style.display = "none";
+      } else if (state.user.email) {
+        statusEl.innerHTML = `
+          <div style="padding: 14px; border-radius: 12px; background: rgba(220,38,38,0.08); color: var(--danger); font-weight: 600; text-align: center;">
+            ❌ Vous n'avez pas encore d'abonnement en cours.<br/>Souscrivez pour dépasser les ${FREE_LIMIT} recherches gratuites.
+          </div>
+        `;
+        const checkoutBtn = document.getElementById("stripeCheckoutBtn");
+        if (checkoutBtn) checkoutBtn.disabled = false;
+        const priceBlock = document.getElementById("priceBlock");
+        if (priceBlock) priceBlock.style.display = "block";
+      } else {
+        statusEl.innerHTML = "";
+      }
+    }
+
+    async function createCheckoutSession() {
+      const email = state.user.email || document.getElementById("loginEmail")?.value.trim();
+      if (!email) {
+        showStatus("Veuillez d'abord vous connecter avec votre email", "error");
+        return;
+      }
+
+      try {
+        showStatus("Création de la session de paiement...", "loading");
+        const res = await fetch(`${apiBase}/billing/session`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Session-ID": state.sessionId,
+            "X-User-Token": state.user.token || ""
+          },
+          body: JSON.stringify({ email })
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          showStatus(`Erreur: ${text}`, "error");
+          return;
+        }
+
+        const data = await res.json();
+        window.location.href = data.checkout_url;
+      } catch (err) {
+        console.error(err);
+        showStatus(`Erreur: ${err.message}`, "error");
+      }
+    }
+
+    let iataCatalog = [];
+    let iataLoading = false;
+    let iataLoadError = null;
+
+    async function loadIataCatalog() {
+      if (iataCatalog.length || iataLoading) return;
+      iataLoading = true;
+      try {
+        const res = await fetch("https://raw.githubusercontent.com/mwgg/Airports/master/airports.json");
+        if (!res.ok) throw new Error(`Chargement IATA impossible (${res.status})`);
+        const data = await res.json();
+        iataCatalog = Object.values(data)
+          .filter(entry => entry.iata && entry.city && entry.country)
+          .map(entry => ({
+            code: entry.iata,
+            city: entry.city,
+            country: entry.country
+          }))
+          .sort((a, b) => a.city.localeCompare(b.city));
+      } catch (err) {
+        console.error("Erreur chargement IATA:", err);
+        iataLoadError = err;
+      } finally {
+        iataLoading = false;
+      }
+    }
+
+    function showStatus(text, state = "idle") {
+      const statuses = {
+        loading: "status-chip loading",
+        success: "status-chip success",
+        error: "status-chip error",
+        idle: "status-chip"
+      };
+      const statusEl = document.getElementById("status");
+      statusEl.innerHTML = `<span class="${statuses[state] || statuses.idle}">${text}</span>`;
+    }
+
+    function formatDuration(minutes) {
+      if (!minutes && minutes !== 0) return "Durée inconnue";
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      if (!m) return `${h}h`;
+      if (!h) return `${m} min`;
+      return `${h}h ${m}min`;
+    }
+
+    function formatFrenchDate(dateStr) {
+      if (!dateStr) return "—";
+      const date = new Date(dateStr);
+      if (Number.isNaN(date.getTime())) return "—";
+      return new Intl.DateTimeFormat("fr-FR", {
+        weekday: "short",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      }).format(date);
+    }
+
+    function renderResults(data, contextDates = {}) {
+      const resultsEl = document.getElementById("results");
+      if (!data || !data.length) {
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            <strong>Aucun trajet trouvé</strong>
+            Ajustez vos dates, augmentez le prix max ou essayez un autre hub.
+          </div>
+        `;
+        return;
+      }
+
+      const cards = data.map((r, index) => {
+        const outboundDate = r.outbound_date || contextDates.outbound;
+        const returnDate = r.return_date || contextDates.return;
+        const airlines = Array.isArray(r.airlines) ? r.airlines.join(", ") : r.airlines;
+        const segments = Array.isArray(r.segments_summary) ? r.segments_summary.join(" · ") : r.segments_summary;
+        return `
+          <article class="flight-card">
+            <div class="price-row">
+              <div>
+                <div class="price">${r.price ?? "—"} ${r.currency || ""}</div>
+                <div class="meta">
+                  <span>${airlines || "Compagnie inconnue"}</span>
+                  <span>•</span>
+                  <span>${r.total_duration_min ? formatDuration(r.total_duration_min) : "Durée n.c."}</span>
+                </div>
+              </div>
+              <span class="tag">${r.stops > 0 ? `${r.stops} escale${r.stops > 1 ? "s" : ""}` : "Vol direct"}</span>
+            </div>
+
+            <div class="trip-dates">
+              <div class="trip-dates-block">
+                <span class="trip-dates-label">Aller</span>
+                <span class="trip-dates-value">${formatFrenchDate(outboundDate)}</span>
+              </div>
+              <div class="trip-dates-divider"></div>
+              <div class="trip-dates-block">
+                <span class="trip-dates-label">Retour</span>
+                <span class="trip-dates-value">${formatFrenchDate(returnDate)}</span>
+              </div>
+            </div>
+
+            <div class="segments">${segments || "Segments non fournis"}</div>
+
+            <div class="card-actions">
+              <span class="small">Option #${index + 1}${r.sort_by ? ` • Rank ${r.sort_by}` : ""}</span>
+              ${r.purchase_url
+                ? `<a class="book-link" href="${r.purchase_url}" target="_blank" rel="noopener">Réserver</a>`
+                : `<span class="small" style="color: var(--muted);">Lien indisponible</span>`
+              }
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      resultsEl.innerHTML = `
+        <div class="results-grid">
+          ${cards}
+        </div>
+      `;
+    }
+
+    function toCSV(arr) {
+      if (!arr || arr.length === 0) return "";
+      const keys = Object.keys(arr[0]);
+      const lines = [keys.join(",")];
+      arr.forEach(o => {
+        const row = keys.map(k => {
+          let v = o[k];
+          if (v === null || v === undefined) return "";
+          v = String(v).replace(/"/g, '""');
+          if (v.includes(",") || v.includes("\n")) v = `"${v}"`;
+          return v;
+        }).join(",");
+        lines.push(row);
+      });
+      return lines.join("\n");
+    }
+
+    function setDefaultDates() {
+      const today = new Date();
+      const outbound = today.toISOString().split("T")[0];
+      const returnDate = new Date(today);
+      returnDate.setDate(returnDate.getDate() + 7);
+      document.getElementById("outbound").value = outbound;
+      document.getElementById("return").value = returnDate.toISOString().split("T")[0];
+    }
+
+    document.getElementById("searchBtn").addEventListener("click", async () => {
+      const dep = document.getElementById("departure").value.trim();
+      const arr = document.getElementById("arrival").value.trim();
+      const out = document.getElementById("outbound").value;
+      const ret = document.getElementById("return").value;
+      const cur = document.getElementById("currency").value;
+      const maxp = document.getElementById("maxprice").value;
+      const sort = document.getElementById("sortby").value;
+      const topn = document.getElementById("topn").value;
+
+      showStatus("Recherche en cours...", "loading");
+
+      try {
+        const params = new URLSearchParams({
+          departure_id: dep,
+          arrival_id: arr,
+          outbound_date: out,
+          return_date: ret,
+          currency: cur,
+          max_price: maxp,
+          sort_by: sort,
+          top_n: topn
+        });
+
+        const headers = {
+          "X-Session-ID": state.sessionId
+        };
+        if (state.user.token) {
+          headers["X-User-Token"] = state.user.token;
+        }
+
+        const res = await fetch(`${apiBase}/search?${params.toString()}`, { headers });
+
+        if (!res.ok) {
+          if (res.status === 402) {
+            // Quota exceeded
+            const errorData = await res.json().catch(() => ({ detail: "Quota dépassé" }));
+            showStatus("Limite de recherches gratuites atteinte", "error");
+            openStripeModal();
+            return;
+          }
+          const text = await res.text();
+          showStatus(`Erreur API ${res.status} — ${text}`, "error");
+          document.getElementById("results").innerHTML = "";
+          return;
+        }
+
+        const data = await res.json();
+        showStatus(`Réussite • ${data.count} résultats`, "success");
+        renderResults(data.results, { outbound: out, return: ret });
+
+        const csv = toCSV(data.results);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const dlBtn = document.getElementById("downloadBtn");
+        dlBtn.onclick = () => {
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "flights_serpapi.csv";
+          a.click();
+        };
+        dlBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+        showStatus(`Erreur : ${err.message}`, "error");
+      }
+    });
+
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      if (document.getElementById("downloadBtn").disabled) {
+        showStatus("Lancez d’abord une recherche pour générer le CSV.", "idle");
+      }
+    });
+
+    const modalBackdrop = document.getElementById("iataModal");
+    const closeModalBtn = document.getElementById("closeIataModal");
+    const iataListEl = document.getElementById("iataList");
+    const iataSearchInput = document.getElementById("iataSearch");
+    const targetChips = document.querySelectorAll(".target-chip");
+    let currentPickerTarget = null;
+
+    function setPickerTarget(targetId) {
+      currentPickerTarget = targetId;
+      targetChips.forEach(chip => {
+        const isActive = chip.dataset.target === targetId;
+        chip.classList.toggle("active", isActive);
+        chip.setAttribute("aria-pressed", String(isActive));
+      });
+    }
+
+    function renderIataList(list) {
+      if (iataLoadError) {
+        iataListEl.innerHTML = `<div class="iata-empty">Impossible de charger la liste IATA.<br/>${iataLoadError.message}</div>`;
+        return;
+      }
+      if (!list.length) {
+        iataListEl.innerHTML = `<div class="iata-empty">Aucun code ne correspond à votre recherche.</div>`;
+        return;
+      }
+      iataListEl.innerHTML = list.map(item => `
+        <button class="iata-item" data-code="${item.code}" data-city="${item.city}" data-country="${item.country}">
+          <div>
+            <strong>${item.code}</strong>
+            <span>${item.city} (${item.country})</span>
+          </div>
+        </button>
+      `).join("");
+    }
+
+    async function openIataPicker(targetId) {
+      setPickerTarget(targetId);
+      modalBackdrop.classList.add("open");
+      iataSearchInput.value = "";
+      if (!iataCatalog.length && !iataLoading) {
+        await loadIataCatalog();
+      }
+      renderIataList(iataCatalog);
+      setTimeout(() => iataSearchInput.focus(), 50);
+    }
+
+    function closeIataPicker() {
+      modalBackdrop.classList.remove("open");
+      currentPickerTarget = null;
+      targetChips.forEach(chip => {
+        chip.classList.remove("active");
+        chip.setAttribute("aria-pressed", "false");
+      });
+    }
+
+    iataSearchInput.addEventListener("input", (e) => {
+      const value = e.target.value.trim().toLowerCase();
+      const filtered = iataCatalog.filter(item =>
+        item.code.toLowerCase().includes(value) ||
+        item.city.toLowerCase().includes(value) ||
+        item.country.toLowerCase().includes(value)
+      );
+      renderIataList(filtered);
+    });
+
+    iataListEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".iata-item");
+      if (!btn || !currentPickerTarget) return;
+      const input = document.getElementById(currentPickerTarget);
+      if (input) {
+        input.value = btn.dataset.code;
+        input.focus();
+      }
+      closeIataPicker();
+    });
+
+    document.querySelectorAll(".picker-btn").forEach(btn => {
+      btn.addEventListener("click", () => openIataPicker(btn.dataset.target));
+    });
+    targetChips.forEach(chip => {
+      chip.addEventListener("click", () => setPickerTarget(chip.dataset.target));
+    });
+
+    closeModalBtn.addEventListener("click", closeIataPicker);
+    modalBackdrop.addEventListener("click", (e) => {
+      if (e.target === modalBackdrop) closeIataPicker();
+    });
+
+    // Stripe modal handlers
+    const stripeModal = document.getElementById("stripeModal");
+    const closeStripeModalBtn = document.getElementById("closeStripeModal");
+    const loginBtn = document.getElementById("loginBtn");
+    const stripeCheckoutBtn = document.getElementById("stripeCheckoutBtn");
+
+    if (closeStripeModalBtn) {
+      closeStripeModalBtn.addEventListener("click", closeStripeModal);
+    }
+    if (stripeModal) {
+      stripeModal.addEventListener("click", (e) => {
+        if (e.target === stripeModal) closeStripeModal();
+      });
+    }
+    if (loginBtn) {
+      loginBtn.addEventListener("click", handleLogin);
+    }
+    if (stripeCheckoutBtn) {
+      stripeCheckoutBtn.addEventListener("click", createCheckoutSession);
+    }
+
+    // Check for success redirect from Stripe
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("session_id")) {
+      state.user.subscriptionActive = true;
+      localStorage.setItem(storageKeys.userSub, "true");
+      updateQuotaIndicator();
+      updateSubscriptionStatus();
+      showStatus("Abonnement activé ! Vous pouvez maintenant effectuer des recherches illimitées.", "success");
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Initialize
+    setDefaultDates();
+    renderResults([], {});
+    updateQuotaIndicator();
+    loadSubscriptionPrice();
+    updateSubscriptionStatus();
+  </script>
+</body>
+</html>
