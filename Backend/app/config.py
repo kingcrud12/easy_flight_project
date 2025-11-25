@@ -28,6 +28,8 @@ SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 
+PORT = int(os.getenv("PORT", "8000"))
+
 print("🔍 Debug variables d'environnement:")
 print(f"  SERPAPI_KEY: {'✅ défini' if SERPAPI_KEY else '❌ non défini'}")
 print(f"  STRIPE_SECRET_EK: {'✅ défini' if STRIPE_SECRET_KEY else '❌ non défini'}")
