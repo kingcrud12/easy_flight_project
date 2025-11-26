@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, Query, Header, Request
+from fastapi import APIRouter, HTTPException, Query, Header, Request, Cookie
 from pydantic import BaseModel
+
+from fastapi.responses import JSONResponse
 
 from .config import (
     SERPAPI_KEY,
@@ -143,18 +145,33 @@ def login_user(payload: LoginRequest):
         user = create_user(email)
 
     _, remaining = check_user_quota(user)
-    return LoginResponse(
-        token=user["token"],
-        email=email,
-        subscription_active=user["subscription_active"],
-        remaining=remaining,
-        limit=FREE_SEARCH_LIMIT,
+
+    response = JSONResponse(
+        content=LoginResponse(
+            token=user["token"],
+            email=email,
+            subscription_active=user["subscription_active"],
+            remaining=remaining,
+            limit=FREE_SEARCH_LIMIT,
+        ).dict()
     )
+
+    # Définir le cookie HttpOnly
+    response.set_cookie(
+        key="user_token",  # nom du cookie
+        value=user["token"],  # valeur du token
+        httponly=True,  # inaccessible via JS
+        secure=True,  # recommandé en prod (HTTPS)
+        samesite="Lax",  # CSRF protection
+        max_age=60 * 60 * 24 * 30  # durée de vie 30 jours (en secondes)
+    )
+
+    return response
 
 
 @router.get("/auth/me", response_model=LoginResponse)
-def get_current_user(x_user_token: Optional[str] = Header(None, alias="X-User-Token")):
-    user = get_user_from_token(x_user_token)
+def get_current_user(user_token: Optional[str] = Cookie(None, alias="user_token")):
+    user = get_user_from_token(user_token)
     if not user:
         raise HTTPException(status_code=401, detail="Utilisateur non connecté")
     _, remaining = check_user_quota(user)
@@ -168,7 +185,12 @@ def get_current_user(x_user_token: Optional[str] = Header(None, alias="X-User-To
 
 
 @router.get("/billing/price", response_model=PriceResponse)
-def get_subscription_price():
+def get_subscription_price(user_token: Optional[str] = Cookie(None, alias="user_token")):
+    # Vérification utilisateur
+    user = get_user_from_token(user_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Utilisateur non connecté")
+
     if not STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe secret key non configuré")
     if not STRIPE_PRICE_ID:
@@ -185,13 +207,13 @@ def get_subscription_price():
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Erreur inattendue: {str(exc)}")
 
-
 @router.get("/billing/quota", response_model=SearchQuotaResponse)
 def get_quota(
     x_session_id: Optional[str] = Header(None, alias="X-Session-ID"),
-    x_user_token: Optional[str] = Header(None, alias="X-User-Token"),
+    user_token: Optional[str] = Cookie(None, alias="user_token")
 ):
-    user = get_user_from_token(x_user_token)
+    # Vérification de l'utilisateur connecté via cookie
+    user = get_user_from_token(user_token)
     if user:
         _, remaining = check_user_quota(user)
         return SearchQuotaResponse(
@@ -202,30 +224,38 @@ def get_quota(
             email=user["email"],
         )
 
+    # Sinon, vérification de la session anonyme
     session_id = get_or_create_session_id(x_session_id)
     data = search_tracking[session_id]
     if data["subscription_active"]:
-        return SearchQuotaResponse(remaining=-1, limit=-1, subscription_active=True, requires_login=False)
+        return SearchQuotaResponse(
+            remaining=-1,
+            limit=-1,
+            subscription_active=True,
+            requires_login=False
+        )
+
     remaining = max(0, FREE_SEARCH_LIMIT - data["count"])
     return SearchQuotaResponse(
         remaining=remaining,
         limit=FREE_SEARCH_LIMIT,
         subscription_active=False,
-        requires_login=True,
+        requires_login=True
     )
 
 
 @router.post("/billing/session", response_model=CheckoutSessionResponse)
 def create_checkout_session(
     payload: CheckoutSessionRequest,
-    x_user_token: Optional[str] = Header(None, alias="X-User-Token"),
+    user_token: Optional[str] = Cookie(None, alias="user_token")
 ):
     if not STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe secret key non configuré")
     if not STRIPE_PRICE_ID:
         raise HTTPException(status_code=500, detail="Stripe price ID non configuré")
 
-    user = get_user_from_token(x_user_token)
+    # Récupération de l'utilisateur via cookie HttpOnly
+    user = get_user_from_token(user_token)
     if not user:
         raise HTTPException(status_code=401, detail="Connectez-vous pour souscrire")
     if user["subscription_active"]:

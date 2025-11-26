@@ -698,29 +698,33 @@
   <script>
     const apiBase = "https://easy-flight-project.onrender.com";
     const FREE_LIMIT = 2;
-    const storageKeys = {
-      session: "flight_session_id",
-      userToken: "flight_user_token",
-      userEmail: "flight_user_email",
-      userSub: "flight_user_subscription"
-    };
+    const SESSION_COOKIE = "flight_session_id";
+
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+      return match ? decodeURIComponent(match[2]) : null;
+    }
+
+    function setCookie(name, value, days = 365) {
+      const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+      document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/`;
+    }
 
     // State management
     const state = {
       sessionId: initSessionId(),
       user: {
-        token: localStorage.getItem(storageKeys.userToken),
-        email: localStorage.getItem(storageKeys.userEmail),
-        subscriptionActive: localStorage.getItem(storageKeys.userSub) === "true",
+        email: null,
+        subscriptionActive: false,
         quotaRemaining: null
       }
     };
 
     function initSessionId() {
-      let sessionId = localStorage.getItem(storageKeys.session);
+      let sessionId = getCookie(SESSION_COOKIE);
       if (!sessionId) {
         sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        localStorage.setItem(storageKeys.session, sessionId);
+        setCookie(SESSION_COOKIE, sessionId, 365);
       }
       return sessionId;
     }
@@ -736,7 +740,7 @@
         return;
       }
 
-      if (state.user.token) {
+      if (state.user.email) {
         if (state.user.quotaRemaining != null) {
           const rem = state.user.quotaRemaining;
           indicator.textContent = rem > 0
@@ -769,7 +773,7 @@
 
     async function loadSubscriptionPrice() {
       try {
-        const res = await fetch(`${apiBase}/billing/price`);
+        const res = await fetch(`${apiBase}/billing/price`, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           const priceEl = document.getElementById("subscriptionPrice");
@@ -794,6 +798,7 @@
         const res = await fetch(`${apiBase}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include",
           body: JSON.stringify({ email })
         });
 
@@ -804,18 +809,11 @@
         }
 
         const data = await res.json();
-        state.user.token = data.token;
-        state.user.email = email;
-        state.user.subscriptionActive = data.subscription_active || false;
-        state.user.quotaRemaining = data.remaining;
-
-        localStorage.setItem(storageKeys.userToken, data.token);
-        localStorage.setItem(storageKeys.userEmail, email);
-        localStorage.setItem(storageKeys.userSub, String(data.subscription_active || false));
-
+        state.user.email = data.email || email;
+        state.user.subscriptionActive = !!data.subscription_active;
+        state.user.quotaRemaining = data.remaining ?? null;
         updateQuotaIndicator();
         updateSubscriptionStatus();
-        updateQuotaIndicator();
 
         if (state.user.subscriptionActive) {
           showStatus("Abonnement retrouvé, vous pouvez fermer la modale.", "success");
@@ -823,6 +821,7 @@
         } else {
           showStatus("Vous n'avez pas encore d'abonnement actif.", "error");
         }
+        refreshUserProfile(true);
       } catch (err) {
         console.error(err);
         showStatus(`Erreur: ${err.message}`, "error");
@@ -858,6 +857,30 @@
       }
     }
 
+    async function refreshUserProfile(silent = false) {
+      try {
+        const res = await fetch(`${apiBase}/auth/me`, { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          state.user.email = data.email;
+          state.user.subscriptionActive = data.subscription_active;
+          state.user.quotaRemaining = data.remaining;
+        } else {
+          state.user.email = null;
+          state.user.subscriptionActive = false;
+          state.user.quotaRemaining = null;
+        }
+      } catch (err) {
+        if (!silent) console.error("Impossible de récupérer le profil utilisateur :", err);
+        state.user.email = null;
+        state.user.subscriptionActive = false;
+        state.user.quotaRemaining = null;
+      } finally {
+        updateQuotaIndicator();
+        updateSubscriptionStatus();
+      }
+    }
+
     async function createCheckoutSession() {
       const email = state.user.email || document.getElementById("loginEmail")?.value.trim();
       if (!email) {
@@ -871,9 +894,9 @@
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Session-ID": state.sessionId,
-            "X-User-Token": state.user.token || ""
+            "X-Session-ID": state.sessionId
           },
+          credentials: "include",
           body: JSON.stringify({ email })
         });
 
@@ -1066,11 +1089,11 @@
         const headers = {
           "X-Session-ID": state.sessionId
         };
-        if (state.user.token) {
-          headers["X-User-Token"] = state.user.token;
-        }
 
-        const res = await fetch(`${apiBase}/search?${params.toString()}`, { headers });
+        const res = await fetch(`${apiBase}/search?${params.toString()}`, {
+          headers,
+          credentials: "include"
+        });
 
         if (!res.ok) {
           if (res.status === 402) {
@@ -1225,10 +1248,7 @@
     // Check for success redirect from Stripe
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("session_id")) {
-      state.user.subscriptionActive = true;
-      localStorage.setItem(storageKeys.userSub, "true");
-      updateQuotaIndicator();
-      updateSubscriptionStatus();
+      refreshUserProfile(true);
       showStatus("Abonnement activé ! Vous pouvez maintenant effectuer des recherches illimitées.", "success");
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -1238,7 +1258,7 @@
     renderResults([], {});
     updateQuotaIndicator();
     loadSubscriptionPrice();
-    updateSubscriptionStatus();
+    refreshUserProfile(true);
   </script>
 </body>
 </html>
