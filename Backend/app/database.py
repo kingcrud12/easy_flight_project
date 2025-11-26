@@ -19,7 +19,7 @@ if load_dotenv:
 else:
     print("⚠️ python-dotenv non installé. Installez-le avec `pip install python-dotenv`.")
 
-SUPABASE_URL =  os.getenv("SUPABASE_URL")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -46,12 +46,17 @@ def get_user_by_email(email: str) -> Optional[Dict]:
 
 
 def get_user_from_token(token: Optional[str]) -> Optional[Dict]:
+    """Renommé : fonction principale pour récupérer un utilisateur via son token"""
     if not token:
         return None
     res = supabase.table("users").select("*").eq("token", token).execute()
     if res.data:
         return row_to_user(res.data[0])
     return None
+
+
+# ⚠️ Alias pour compatibilité avec l'ancien code
+get_user_by_token = get_user_from_token
 
 
 def create_user(email: str) -> Dict:
