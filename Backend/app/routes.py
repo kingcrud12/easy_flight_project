@@ -16,6 +16,7 @@ from .config import (
     search_tracking,
     stripe,
     COOKIE_SECURE,
+    COOKIE_DOMAIN,
 )
 from .serpapi import search_offers
 from .quota import (
@@ -162,10 +163,10 @@ def login_user(payload: LoginRequest):
         key="user_token",
         value=user["token"],
         httponly=True,
-        secure=True if COOKIE_SECURE else False,
+        secure=COOKIE_SECURE,
         samesite="none" if COOKIE_SECURE else "lax",
         max_age=60 * 60 * 24 * 30,
-        domain=".onrender.com" if COOKIE_SECURE else None,
+        domain=COOKIE_DOMAIN if COOKIE_SECURE and COOKIE_DOMAIN else None,
     )
 
     return response
@@ -187,12 +188,7 @@ def get_current_user(user_token: Optional[str] = Cookie(None, alias="user_token"
 
 
 @router.get("/billing/price", response_model=PriceResponse)
-def get_subscription_price(user_token: Optional[str] = Cookie(None, alias="user_token")):
-    # Vérification utilisateur
-    user = get_user_from_token(user_token)
-    if not user:
-        raise HTTPException(status_code=401, detail="Utilisateur non connecté")
-
+def get_subscription_price():
     if not STRIPE_SECRET_KEY:
         raise HTTPException(status_code=500, detail="Stripe secret key non configuré")
     if not STRIPE_PRICE_ID:
