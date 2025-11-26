@@ -10,7 +10,7 @@ app = FastAPI(title="Flight Comparator API (SerpApi)")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adapter pour la production
+    allow_origins=["https://easy-flight-project-1.onrender.com"],  # Adapter pour la production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
