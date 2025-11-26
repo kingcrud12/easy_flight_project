@@ -15,6 +15,7 @@ from .config import (
     FREE_SEARCH_LIMIT,
     search_tracking,
     stripe,
+    COOKIE_SECURE,
 )
 from .serpapi import search_offers
 from .quota import (
@@ -158,12 +159,13 @@ def login_user(payload: LoginRequest):
 
     # Définir le cookie HttpOnly
     response.set_cookie(
-        key="user_token",  # nom du cookie
-        value=user["token"],  # valeur du token
-        httponly=True,  # inaccessible via JS
-        secure=True,  # recommandé en prod (HTTPS)
-        samesite="Lax",  # CSRF protection
-        max_age=60 * 60 * 24 * 30  # durée de vie 30 jours (en secondes)
+        key="user_token",
+        value=user["token"],
+        httponly=True,
+        secure=True if COOKIE_SECURE else False,
+        samesite="none" if COOKIE_SECURE else "lax",
+        max_age=60 * 60 * 24 * 30,
+        domain=".onrender.com" if COOKIE_SECURE else None,
     )
 
     return response

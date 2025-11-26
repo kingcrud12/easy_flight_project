@@ -27,6 +27,7 @@ SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 
 PORT = int(os.getenv("PORT", "8000"))
 
@@ -39,6 +40,7 @@ print(f"  STRIPE_PRICE_ID: {'✅ défini' if STRIPE_PRICE_ID else '❌ non défi
 if STRIPE_PRICE_ID:
     print(f"    Valeur: {STRIPE_PRICE_ID}")
 print(f"  SMTP_USER: {'✅ défini' if SMTP_USER else '❌ non défini'}")
+print(f"  COOKIE_SECURE: {COOKIE_SECURE}")
 
 if STRIPE_SECRET_KEY:
     stripe.api_key = STRIPE_SECRET_KEY
