@@ -435,124 +435,6 @@
       text-align: center;
       color: var(--muted);
     }
-    .stripe-modal {
-      background: var(--card);
-      border-radius: 22px;
-      width: min(520px, 100%);
-      max-height: 90vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      box-shadow: var(--shadow);
-    }
-    .stripe-modal header {
-      padding: 24px 28px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-    }
-    .stripe-modal h3 {
-      margin: 0;
-      font-size: 1.6rem;
-    }
-    .stripe-modal .content {
-      padding: 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .quota-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border-radius: 999px;
-      background: rgba(11,92,255,0.08);
-      color: var(--primary);
-      font-size: 0.85rem;
-      font-weight: 600;
-      margin-top: 12px;
-    }
-    .stripe-modal .price-display {
-      text-align: center;
-      padding: 20px;
-      border-radius: 16px;
-      border: 2px solid rgba(11,92,255,0.2);
-      background: rgba(11,92,255,0.08);
-    }
-    .stripe-modal .price-display .amount {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin: 8px 0;
-    }
-    .stripe-modal .price-display .period {
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-    .stripe-modal .benefits {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .stripe-modal .benefits li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.95rem;
-    }
-    .stripe-modal .benefits li::before {
-      content: "✓";
-      color: var(--success);
-      font-weight: 700;
-      font-size: 1.2rem;
-    }
-    .login-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 8px;
-    }
-    .login-row input {
-      flex: 1;
-      margin-top: 0;
-    }
-    .login-row button {
-      border: none;
-      border-radius: 10px;
-      padding: 0 18px;
-      background: var(--primary);
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    .subscription-status {
-      padding: 12px 16px;
-      border-radius: 14px;
-      background: rgba(15,23,42,0.05);
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-    .stripe-modal .cta-button {
-      width: 100%;
-      justify-content: center;
-      margin-top: 4px;
-    }
-    .stripe-modal .cta-button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-    .modal-note {
-      font-size: 0.85rem;
-      color: var(--muted);
-      text-align: center;
-      margin: 0;
-    }
     .hidden {
       display: none !important;
     }
@@ -560,8 +442,6 @@
       .search-card { padding: 22px; }
       .card-actions { flex-direction: column; }
       .book-link { width: 100%; }
-      .stripe-modal { width: 95%; }
-      .login-row { flex-direction: column; }
     }
   </style>
 </head>
@@ -636,7 +516,6 @@
     </div>
 
       <div id="status"></div>
-      <div id="quotaIndicator" class="quota-indicator"></div>
     </section>
 
     <section class="results-wrapper" id="results"></section>
@@ -662,294 +541,28 @@
     </div>
   </div>
 
-  <div class="modal-backdrop" id="stripeModal">
-    <div class="stripe-modal">
-      <header>
-        <h3>Débloquez les recherches illimitées</h3>
-        <button class="close-btn" id="closeStripeModal" aria-label="Fermer">✕</button>
-      </header>
-      <div class="content">
-        <div>
-          <label for="loginEmail">Connectez-vous pour retrouver votre abonnement</label>
-          <div class="login-row">
-            <input id="loginEmail" type="email" placeholder="vous@email.com" />
-            <button id="loginBtn" type="button">Se connecter</button>
-          </div>
-          <p class="modal-note">Aucun mot de passe — saisissez simplement votre email pour retrouver votre abonnement.</p>
-        </div>
-        <div id="subscriptionStatus" class="subscription-status"></div>
-        <div class="price-display" id="priceBlock">
-          <div class="small">Abonnement mensuel</div>
-          <div class="amount" id="subscriptionPrice">—</div>
-          <div class="period">par mois</div>
-        </div>
-        <ul class="benefits">
-          <li>Recherches illimitées</li>
-          <li>Export CSV sans restriction</li>
-          <li>Accès prioritaire aux nouvelles fonctionnalités</li>
-          <li>Support dédié</li>
-        </ul>
-        <button id="stripeCheckoutBtn" class="primary-btn cta-button" disabled>S'abonner maintenant</button>
-        <p class="modal-note">Paiement sécurisé par Stripe. Résiliable à tout moment.</p>
-      </div>
-    </div>
-  </div>
-
   <script>
-    const apiBase = "https://easy-flight-project.onrender.com";
-    const FREE_LIMIT = 2;
-    const SESSION_COOKIE = "flight_session_id";
+    const apiBase = window.location.hostname.includes("onrender.com")
+      ? "https://easy-flight-project.onrender.com"
+      : "http://localhost:8000";
 
-    function getCookie(name) {
-      const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-      return match ? decodeURIComponent(match[2]) : null;
-    }
-
-    function setCookie(name, value, days = 365) {
-      const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
-      document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/`;
-    }
-
-    // State management
     const state = {
-      sessionId: initSessionId(),
-      user: {
-        email: null,
-        subscriptionActive: false,
-        quotaRemaining: null
-      }
+      csvUrl: null,
+      iataCatalog: [],
+      iataLoading: false,
+      iataError: null,
+      pickerTarget: null,
     };
 
-    function initSessionId() {
-      let sessionId = getCookie(SESSION_COOKIE);
-      if (!sessionId) {
-        sessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        setCookie(SESSION_COOKIE, sessionId, 365);
-      }
-      return sessionId;
-    }
-
-    function updateQuotaIndicator() {
-      const indicator = document.getElementById("quotaIndicator");
-      if (!indicator) return;
-
-      if (state.user.subscriptionActive) {
-        indicator.textContent = "✅ Abonnement actif — recherches illimitées";
-        indicator.style.background = "rgba(22,163,74,0.12)";
-        indicator.style.color = "var(--success)";
-        return;
-      }
-
-      if (state.user.email) {
-        if (state.user.quotaRemaining != null) {
-          const rem = state.user.quotaRemaining;
-          indicator.textContent = rem > 0
-            ? `${rem} recherche${rem > 1 ? "s" : ""} gratuites restantes`
-            : "Quota gratuit épuisé — abonnez-vous pour continuer";
-        } else {
-          indicator.textContent = "Connecté — vérification du quota...";
-        }
-        indicator.style.background = "rgba(11,92,255,0.08)";
-        indicator.style.color = "var(--primary)";
-        return;
-      }
-
-      indicator.textContent = `${FREE_LIMIT} recherches gratuites disponibles`;
-      indicator.style.background = "rgba(11,92,255,0.08)";
-      indicator.style.color = "var(--primary)";
-    }
-
-    function openStripeModal() {
-      const modal = document.getElementById("stripeModal");
-      if (modal) modal.classList.add("open");
-      loadSubscriptionPrice();
-      updateSubscriptionStatus();
-    }
-
-    function closeStripeModal() {
-      const modal = document.getElementById("stripeModal");
-      if (modal) modal.classList.remove("open");
-    }
-
-    async function loadSubscriptionPrice() {
-      try {
-        const res = await fetch(`${apiBase}/billing/price`, { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          const priceEl = document.getElementById("subscriptionPrice");
-          if (priceEl) priceEl.textContent = data.formatted;
-        }
-      } catch (err) {
-        console.error("Failed to load price:", err);
-      }
-    }
-
-    async function handleLogin() {
-      const emailInput = document.getElementById("loginEmail");
-      if (!emailInput) return;
-      const email = emailInput.value.trim().toLowerCase();
-      if (!email || !email.includes("@")) {
-        showStatus("Email invalide", "error");
-        return;
-      }
-
-      try {
-        showStatus("Connexion en cours...", "loading");
-        const res = await fetch(`${apiBase}/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email })
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          showStatus(`Erreur: ${text}`, "error");
-          return;
-        }
-
-        const data = await res.json();
-        state.user.email = data.email || email;
-        state.user.subscriptionActive = !!data.subscription_active;
-        state.user.quotaRemaining = data.remaining ?? null;
-        updateQuotaIndicator();
-        updateSubscriptionStatus();
-
-        if (state.user.subscriptionActive) {
-          showStatus("Abonnement retrouvé, vous pouvez fermer la modale.", "success");
-          setTimeout(() => closeStripeModal(), 400);
-        } else {
-          showStatus("Vous n'avez pas encore d'abonnement actif.", "error");
-        }
-        refreshUserProfile(true);
-      } catch (err) {
-        console.error(err);
-        showStatus(`Erreur: ${err.message}`, "error");
-      }
-    }
-
-    function updateSubscriptionStatus() {
-      const statusEl = document.getElementById("subscriptionStatus");
-      if (!statusEl) return;
-
-      if (state.user.subscriptionActive) {
-        statusEl.innerHTML = `
-          <div style="padding: 16px; background: rgba(22,163,74,0.1); border-radius: 12px; text-align: center; color: var(--success); font-weight: 600;">
-            ✅ Abonnement actif — Vous pouvez effectuer des recherches illimitées
-          </div>
-        `;
-        const checkoutBtn = document.getElementById("stripeCheckoutBtn");
-        if (checkoutBtn) checkoutBtn.disabled = true;
-        const priceBlock = document.getElementById("priceBlock");
-        if (priceBlock) priceBlock.style.display = "none";
-      } else if (state.user.email) {
-        statusEl.innerHTML = `
-          <div style="padding: 14px; border-radius: 12px; background: rgba(220,38,38,0.08); color: var(--danger); font-weight: 600; text-align: center;">
-            ❌ Vous n'avez pas encore d'abonnement en cours.<br/>Souscrivez pour dépasser les ${FREE_LIMIT} recherches gratuites.
-          </div>
-        `;
-        const checkoutBtn = document.getElementById("stripeCheckoutBtn");
-        if (checkoutBtn) checkoutBtn.disabled = false;
-        const priceBlock = document.getElementById("priceBlock");
-        if (priceBlock) priceBlock.style.display = "block";
-      } else {
-        statusEl.innerHTML = "";
-      }
-    }
-
-    async function refreshUserProfile(silent = false) {
-      try {
-        const res = await fetch(`${apiBase}/auth/me`, { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          state.user.email = data.email;
-          state.user.subscriptionActive = data.subscription_active;
-          state.user.quotaRemaining = data.remaining;
-        } else {
-          state.user.email = null;
-          state.user.subscriptionActive = false;
-          state.user.quotaRemaining = null;
-        }
-      } catch (err) {
-        if (!silent) console.error("Impossible de récupérer le profil utilisateur :", err);
-        state.user.email = null;
-        state.user.subscriptionActive = false;
-        state.user.quotaRemaining = null;
-      } finally {
-        updateQuotaIndicator();
-        updateSubscriptionStatus();
-      }
-    }
-
-    async function createCheckoutSession() {
-      const email = state.user.email || document.getElementById("loginEmail")?.value.trim();
-      if (!email) {
-        showStatus("Veuillez d'abord vous connecter avec votre email", "error");
-        return;
-      }
-
-      try {
-        showStatus("Création de la session de paiement...", "loading");
-        const res = await fetch(`${apiBase}/billing/session`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Session-ID": state.sessionId
-          },
-          credentials: "include",
-          body: JSON.stringify({ email })
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          showStatus(`Erreur: ${text}`, "error");
-          return;
-        }
-
-        const data = await res.json();
-        window.location.href = data.checkout_url;
-      } catch (err) {
-        console.error(err);
-        showStatus(`Erreur: ${err.message}`, "error");
-      }
-    }
-
-    let iataCatalog = [];
-    let iataLoading = false;
-    let iataLoadError = null;
-
-    async function loadIataCatalog() {
-      if (iataCatalog.length || iataLoading) return;
-      iataLoading = true;
-      try {
-        const res = await fetch("https://raw.githubusercontent.com/mwgg/Airports/master/airports.json");
-        if (!res.ok) throw new Error(`Chargement IATA impossible (${res.status})`);
-        const data = await res.json();
-        iataCatalog = Object.values(data)
-          .filter(entry => entry.iata && entry.city && entry.country)
-          .map(entry => ({
-            code: entry.iata,
-            city: entry.city,
-            country: entry.country
-          }))
-          .sort((a, b) => a.city.localeCompare(b.city));
-      } catch (err) {
-        console.error("Erreur chargement IATA:", err);
-        iataLoadError = err;
-      } finally {
-        iataLoading = false;
-      }
-    }
-
-    function showStatus(text, state = "idle") {
-      const statuses = {
+    function showStatus(text, tone = "idle") {
+      const classes = {
         loading: "status-chip loading",
         success: "status-chip success",
         error: "status-chip error",
-        idle: "status-chip"
+        idle: "status-chip",
       };
       const statusEl = document.getElementById("status");
-      statusEl.innerHTML = `<span class="${statuses[state] || statuses.idle}">${text}</span>`;
+      statusEl.innerHTML = `<span class="${classes[tone] || classes.idle}">${text}</span>`;
     }
 
     function formatDuration(minutes) {
@@ -969,7 +582,7 @@
         weekday: "short",
         day: "numeric",
         month: "long",
-        year: "numeric"
+        year: "numeric",
       }).format(date);
     }
 
@@ -985,70 +598,69 @@
         return;
       }
 
-      const cards = data.map((r, index) => {
-        const outboundDate = r.outbound_date || contextDates.outbound;
-        const returnDate = r.return_date || contextDates.return;
-        const airlines = Array.isArray(r.airlines) ? r.airlines.join(", ") : r.airlines;
-        const segments = Array.isArray(r.segments_summary) ? r.segments_summary.join(" · ") : r.segments_summary;
-        return `
-          <article class="flight-card">
-            <div class="price-row">
-              <div>
-                <div class="price">${r.price ?? "—"} ${r.currency || ""}</div>
-                <div class="meta">
-                  <span>${airlines || "Compagnie inconnue"}</span>
-                  <span>•</span>
-                  <span>${r.total_duration_min ? formatDuration(r.total_duration_min) : "Durée n.c."}</span>
+      const cards = data
+        .map((r, index) => {
+          const outboundDate = r.outbound_date || contextDates.outbound;
+          const returnDate = r.return_date || contextDates.return;
+          return `
+            <article class="flight-card">
+              <div class="price-row">
+                <div>
+                  <div class="price">${r.price ?? "—"} ${r.currency || ""}</div>
+                  <div class="meta">
+                    <span>${r.airlines || "Compagnie inconnue"}</span>
+                    <span>•</span>
+                    <span>${r.total_duration_min ? formatDuration(r.total_duration_min) : "Durée n.c."}</span>
+                  </div>
+                </div>
+                <span class="tag">${r.stops > 0 ? `${r.stops} escale${r.stops > 1 ? "s" : ""}` : "Vol direct"}</span>
+              </div>
+
+              <div class="trip-dates">
+                <div class="trip-dates-block">
+                  <span class="trip-dates-label">Aller</span>
+                  <span class="trip-dates-value">${formatFrenchDate(outboundDate)}</span>
+                </div>
+                <div class="trip-dates-divider"></div>
+                <div class="trip-dates-block">
+                  <span class="trip-dates-label">Retour</span>
+                  <span class="trip-dates-value">${formatFrenchDate(returnDate)}</span>
                 </div>
               </div>
-              <span class="tag">${r.stops > 0 ? `${r.stops} escale${r.stops > 1 ? "s" : ""}` : "Vol direct"}</span>
-            </div>
 
-            <div class="trip-dates">
-              <div class="trip-dates-block">
-                <span class="trip-dates-label">Aller</span>
-                <span class="trip-dates-value">${formatFrenchDate(outboundDate)}</span>
+              <div class="segments">${r.segments_summary || "Segments non fournis"}</div>
+
+              <div class="card-actions">
+                <span class="small">Option #${index + 1}</span>
+                ${
+                  r.purchase_url
+                    ? `<a class="book-link" href="${r.purchase_url}" target="_blank" rel="noopener">Réserver</a>`
+                    : `<span class="small" style="color: var(--muted);">Lien indisponible</span>`
+                }
               </div>
-              <div class="trip-dates-divider"></div>
-              <div class="trip-dates-block">
-                <span class="trip-dates-label">Retour</span>
-                <span class="trip-dates-value">${formatFrenchDate(returnDate)}</span>
-              </div>
-            </div>
+            </article>
+          `;
+        })
+        .join("");
 
-            <div class="segments">${segments || "Segments non fournis"}</div>
-
-            <div class="card-actions">
-              <span class="small">Option #${index + 1}${r.sort_by ? ` • Rank ${r.sort_by}` : ""}</span>
-              ${r.purchase_url
-                ? `<a class="book-link" href="${r.purchase_url}" target="_blank" rel="noopener">Réserver</a>`
-                : `<span class="small" style="color: var(--muted);">Lien indisponible</span>`
-              }
-            </div>
-          </article>
-        `;
-      }).join("");
-
-      resultsEl.innerHTML = `
-        <div class="results-grid">
-          ${cards}
-        </div>
-      `;
+      resultsEl.innerHTML = `<div class="results-grid">${cards}</div>`;
     }
 
-    function toCSV(arr) {
-      if (!arr || arr.length === 0) return "";
-      const keys = Object.keys(arr[0]);
+    function toCSV(rows) {
+      if (!rows || !rows.length) return "";
+      const keys = Object.keys(rows[0]);
       const lines = [keys.join(",")];
-      arr.forEach(o => {
-        const row = keys.map(k => {
-          let v = o[k];
-          if (v === null || v === undefined) return "";
-          v = String(v).replace(/"/g, '""');
-          if (v.includes(",") || v.includes("\n")) v = `"${v}"`;
-          return v;
-        }).join(",");
-        lines.push(row);
+      rows.forEach((row) => {
+        const values = keys
+          .map((key) => {
+            let value = row[key];
+            if (value === null || value === undefined) return "";
+            value = String(value).replace(/"/g, '""');
+            if (value.includes(",") || value.includes("\n")) value = `"${value}"`;
+            return value;
+          })
+          .join(",");
+        lines.push(values);
       });
       return lines.join("\n");
     }
@@ -1062,47 +674,33 @@
       document.getElementById("return").value = returnDate.toISOString().split("T")[0];
     }
 
-    document.getElementById("searchBtn").addEventListener("click", async () => {
-      const dep = document.getElementById("departure").value.trim();
-      const arr = document.getElementById("arrival").value.trim();
-      const out = document.getElementById("outbound").value;
+    async function searchFlights() {
+      const departure = document.getElementById("departure").value.trim();
+      const arrival = document.getElementById("arrival").value.trim();
+      const outbound = document.getElementById("outbound").value;
       const ret = document.getElementById("return").value;
-      const cur = document.getElementById("currency").value;
-      const maxp = document.getElementById("maxprice").value;
-      const sort = document.getElementById("sortby").value;
-      const topn = document.getElementById("topn").value;
+      const currency = document.getElementById("currency").value;
+      const maxPrice = document.getElementById("maxprice").value;
+      const sortBy = document.getElementById("sortby").value;
+      const topN = document.getElementById("topn").value;
 
       showStatus("Recherche en cours...", "loading");
 
       try {
         const params = new URLSearchParams({
-          departure_id: dep,
-          arrival_id: arr,
-          outbound_date: out,
+          departure_id: departure,
+          arrival_id: arrival,
+          outbound_date: outbound,
           return_date: ret,
-          currency: cur,
-          max_price: maxp,
-          sort_by: sort,
-          top_n: topn
+          currency,
+          max_price: maxPrice,
+          sort_by: sortBy,
+          top_n: topN,
         });
 
-        const headers = {
-          "X-Session-ID": state.sessionId
-        };
-
-        const res = await fetch(`${apiBase}/search?${params.toString()}`, {
-          headers,
-          credentials: "include"
-        });
+        const res = await fetch(`${apiBase}/search?${params.toString()}`);
 
         if (!res.ok) {
-          if (res.status === 402) {
-            // Quota exceeded
-            const errorData = await res.json().catch(() => ({ detail: "Quota dépassé" }));
-            showStatus("Limite de recherches gratuites atteinte", "error");
-            openStripeModal();
-            return;
-          }
           const text = await res.text();
           showStatus(`Erreur API ${res.status} — ${text}`, "error");
           document.getElementById("results").innerHTML = "";
@@ -1110,42 +708,64 @@
         }
 
         const data = await res.json();
+        renderResults(data.results, { outbound, return: ret });
         showStatus(`Réussite • ${data.count} résultats`, "success");
-        renderResults(data.results, { outbound: out, return: ret });
+
+        if (state.csvUrl) {
+          URL.revokeObjectURL(state.csvUrl);
+          state.csvUrl = null;
+        }
 
         const csv = toCSV(data.results);
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const dlBtn = document.getElementById("downloadBtn");
-        dlBtn.onclick = () => {
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "flights_serpapi.csv";
-          a.click();
-        };
-        dlBtn.disabled = false;
+        if (csv) {
+          state.csvUrl = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+          const dlBtn = document.getElementById("downloadBtn");
+          dlBtn.disabled = false;
+          dlBtn.onclick = () => {
+            const a = document.createElement("a");
+            a.href = state.csvUrl;
+            a.download = "flights_serpapi.csv";
+            a.click();
+          };
+        }
       } catch (err) {
         console.error(err);
         showStatus(`Erreur : ${err.message}`, "error");
       }
-    });
+    }
 
-    document.getElementById("downloadBtn").addEventListener("click", () => {
-      if (document.getElementById("downloadBtn").disabled) {
-        showStatus("Lancez d’abord une recherche pour générer le CSV.", "idle");
+    async function loadIataCatalog() {
+      if (state.iataCatalog.length || state.iataLoading) return;
+      state.iataLoading = true;
+      try {
+        const res = await fetch("https://raw.githubusercontent.com/mwgg/Airports/master/airports.json");
+        if (!res.ok) throw new Error(`Chargement IATA impossible (${res.status})`);
+        const data = await res.json();
+        state.iataCatalog = Object.values(data)
+          .filter((entry) => entry.iata && entry.city && entry.country)
+          .map((entry) => ({
+            code: entry.iata,
+            city: entry.city,
+            country: entry.country,
+          }))
+          .sort((a, b) => a.city.localeCompare(b.city));
+      } catch (err) {
+        console.error("Erreur chargement IATA:", err);
+        state.iataError = err;
+      } finally {
+        state.iataLoading = false;
       }
-    });
+    }
 
     const modalBackdrop = document.getElementById("iataModal");
     const closeModalBtn = document.getElementById("closeIataModal");
     const iataListEl = document.getElementById("iataList");
     const iataSearchInput = document.getElementById("iataSearch");
     const targetChips = document.querySelectorAll(".target-chip");
-    let currentPickerTarget = null;
 
     function setPickerTarget(targetId) {
-      currentPickerTarget = targetId;
-      targetChips.forEach(chip => {
+      state.pickerTarget = targetId;
+      targetChips.forEach((chip) => {
         const isActive = chip.dataset.target === targetId;
         chip.classList.toggle("active", isActive);
         chip.setAttribute("aria-pressed", String(isActive));
@@ -1153,39 +773,43 @@
     }
 
     function renderIataList(list) {
-      if (iataLoadError) {
-        iataListEl.innerHTML = `<div class="iata-empty">Impossible de charger la liste IATA.<br/>${iataLoadError.message}</div>`;
+      if (state.iataError) {
+        iataListEl.innerHTML = `<div class="iata-empty">Impossible de charger la liste IATA.<br/>${state.iataError.message}</div>`;
         return;
       }
       if (!list.length) {
         iataListEl.innerHTML = `<div class="iata-empty">Aucun code ne correspond à votre recherche.</div>`;
         return;
       }
-      iataListEl.innerHTML = list.map(item => `
+      iataListEl.innerHTML = list
+        .map(
+          (item) => `
         <button class="iata-item" data-code="${item.code}" data-city="${item.city}" data-country="${item.country}">
           <div>
             <strong>${item.code}</strong>
             <span>${item.city} (${item.country})</span>
           </div>
         </button>
-      `).join("");
+      `,
+        )
+        .join("");
     }
 
     async function openIataPicker(targetId) {
       setPickerTarget(targetId);
       modalBackdrop.classList.add("open");
       iataSearchInput.value = "";
-      if (!iataCatalog.length && !iataLoading) {
+      if (!state.iataCatalog.length && !state.iataLoading) {
         await loadIataCatalog();
       }
-      renderIataList(iataCatalog);
+      renderIataList(state.iataCatalog);
       setTimeout(() => iataSearchInput.focus(), 50);
     }
 
     function closeIataPicker() {
       modalBackdrop.classList.remove("open");
-      currentPickerTarget = null;
-      targetChips.forEach(chip => {
+      state.pickerTarget = null;
+      targetChips.forEach((chip) => {
         chip.classList.remove("active");
         chip.setAttribute("aria-pressed", "false");
       });
@@ -1193,18 +817,19 @@
 
     iataSearchInput.addEventListener("input", (e) => {
       const value = e.target.value.trim().toLowerCase();
-      const filtered = iataCatalog.filter(item =>
-        item.code.toLowerCase().includes(value) ||
-        item.city.toLowerCase().includes(value) ||
-        item.country.toLowerCase().includes(value)
+      const filtered = state.iataCatalog.filter(
+        (item) =>
+          item.code.toLowerCase().includes(value) ||
+          item.city.toLowerCase().includes(value) ||
+          item.country.toLowerCase().includes(value),
       );
       renderIataList(filtered);
     });
 
     iataListEl.addEventListener("click", (e) => {
       const btn = e.target.closest(".iata-item");
-      if (!btn || !currentPickerTarget) return;
-      const input = document.getElementById(currentPickerTarget);
+      if (!btn || !state.pickerTarget) return;
+      const input = document.getElementById(state.pickerTarget);
       if (input) {
         input.value = btn.dataset.code;
         input.focus();
@@ -1212,53 +837,30 @@
       closeIataPicker();
     });
 
-    document.querySelectorAll(".picker-btn").forEach(btn => {
+    document.querySelectorAll(".picker-btn").forEach((btn) => {
       btn.addEventListener("click", () => openIataPicker(btn.dataset.target));
     });
-    targetChips.forEach(chip => {
-      chip.addEventListener("click", () => setPickerTarget(chip.dataset.target));
-    });
+    targetChips.forEach((chip) => chip.addEventListener("click", () => setPickerTarget(chip.dataset.target)));
 
     closeModalBtn.addEventListener("click", closeIataPicker);
     modalBackdrop.addEventListener("click", (e) => {
       if (e.target === modalBackdrop) closeIataPicker();
     });
 
-    // Stripe modal handlers
-    const stripeModal = document.getElementById("stripeModal");
-    const closeStripeModalBtn = document.getElementById("closeStripeModal");
-    const loginBtn = document.getElementById("loginBtn");
-    const stripeCheckoutBtn = document.getElementById("stripeCheckoutBtn");
+    document.getElementById("searchBtn").addEventListener("click", searchFlights);
+    document.getElementById("downloadBtn").addEventListener("click", () => {
+      if (document.getElementById("downloadBtn").disabled) {
+        showStatus("Lancez d’abord une recherche pour générer le CSV.", "idle");
+      }
+    });
 
-    if (closeStripeModalBtn) {
-      closeStripeModalBtn.addEventListener("click", closeStripeModal);
-    }
-    if (stripeModal) {
-      stripeModal.addEventListener("click", (e) => {
-        if (e.target === stripeModal) closeStripeModal();
-      });
-    }
-    if (loginBtn) {
-      loginBtn.addEventListener("click", handleLogin);
-    }
-    if (stripeCheckoutBtn) {
-      stripeCheckoutBtn.addEventListener("click", createCheckoutSession);
-    }
+    window.addEventListener("beforeunload", () => {
+      if (state.csvUrl) URL.revokeObjectURL(state.csvUrl);
+    });
 
-    // Check for success redirect from Stripe
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get("session_id")) {
-      refreshUserProfile(true);
-      showStatus("Abonnement activé ! Vous pouvez maintenant effectuer des recherches illimitées.", "success");
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    // Initialize
     setDefaultDates();
     renderResults([], {});
-    updateQuotaIndicator();
-    loadSubscriptionPrice();
-    refreshUserProfile(true);
+    showStatus("Configurez votre recherche puis lancez une requête.");
   </script>
 </body>
 </html>
