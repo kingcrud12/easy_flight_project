@@ -72,5 +72,19 @@ def search_flights(
 
     combined.sort(key=lambda item: item.get("price") if item.get("price") is not None else float("inf"))
     limited = combined[:top_n]
+
+    def ensure_provider(provider: str, current: List[dict]) -> List[dict]:
+        if any(entry.get("source") == provider for entry in current):
+            return current
+        for candidate in combined:
+            if candidate.get("source") == provider and candidate not in current:
+                current.append(candidate)
+                current.sort(key=lambda item: item.get("price") if item.get("price") is not None else float("inf"))
+                return current[:top_n]
+        return current
+
+    for provider in ("serpapi", "aviationstack"):
+        limited = ensure_provider(provider, limited)
+
     return {"results": limited, "count": len(combined)}
 
