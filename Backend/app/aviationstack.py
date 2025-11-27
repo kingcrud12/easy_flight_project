@@ -49,7 +49,7 @@ def search_aviationstack_offers(
         params["flight_date"] = outbound_date
 
     try:
-        resp = requests.get("http://api.aviationstack.com/v1/flights", params=params, timeout=20)
+        resp = requests.get("https://api.aviationstack.com/v1/flights", params=params, timeout=20)
         resp.raise_for_status()
     except requests.RequestException as exc:
         raise HTTPException(status_code=502, detail=f"Aviationstack error: {exc}")
