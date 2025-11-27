@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from .config import SERPAPI_KEY
 from .serpapi import search_offers as search_serpapi_offers
 from .aviationstack import search_aviationstack_offers
+from .aviasales import search_aviasales_offers
 
 router = APIRouter()
 
@@ -67,6 +68,14 @@ def search_flights(
         # Aviationstack est optionnel : on log mais on ne bloque pas la recherche.
         print(f"⚠️ Aviationstack error: {exc.detail}")
 
+    try:
+        aviasales_results = search_aviasales_offers(
+            departure_id, arrival_id, outbound_date, return_date, currency, max_price, top_n
+        )
+        combined.extend(aviasales_results)
+    except HTTPException as exc:
+        print(f"⚠️ Aviasales error: {exc.detail}")
+
     if not combined:
         return {"results": [], "count": 0}
 
@@ -83,7 +92,7 @@ def search_flights(
                 return current[:top_n]
         return current
 
-    for provider in ("serpapi", "aviationstack"):
+    for provider in ("serpapi", "aviationstack", "aviasales"):
         limited = ensure_provider(provider, limited)
 
     return {"results": limited, "count": len(combined)}
