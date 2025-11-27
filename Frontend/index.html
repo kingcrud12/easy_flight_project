@@ -98,12 +98,6 @@
       color: var(--muted);
       margin: 0;
     }
-    .field-label-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
     label {
       font-weight: 600;
       font-size: 0.9rem;
@@ -127,6 +121,8 @@
     .picker-btn {
       position: absolute;
       right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
       background: rgba(11,92,255,0.12);
       color: var(--primary);
       border: none;
@@ -139,7 +135,7 @@
     }
     .picker-btn:hover {
       background: rgba(11,92,255,0.22);
-      transform: translateY(-1px);
+      transform: translateY(calc(-50% - 1px));
     }
     input:focus, select:focus {
       outline: none;
@@ -463,21 +459,17 @@
 
       <div class="form-grid">
         <div>
-          <div class="field-label-row">
-            <label for="departure">Départ (IATA)</label>
-            <button type="button" class="picker-btn" data-target="departure">Choisir</button>
-          </div>
+          <label for="departure">Départ (IATA)</label>
           <div class="input-with-picker">
             <input id="departure" value="CDG" placeholder="Ex : CDG" />
+            <button type="button" class="picker-btn" data-target="departure">Choisir</button>
           </div>
       </div>
       <div>
-          <div class="field-label-row">
-            <label for="arrival">Arrivée (IATA ou code multi)</label>
-            <button type="button" class="picker-btn" data-target="arrival">Choisir</button>
-          </div>
+          <label for="arrival">Arrivée (IATA ou code multi)</label>
           <div class="input-with-picker">
             <input id="arrival" value="LON" placeholder="Ex : LON" />
+            <button type="button" class="picker-btn" data-target="arrival">Choisir</button>
           </div>
       </div>
       <div>
@@ -719,14 +711,14 @@
         const csv = toCSV(data.results);
         if (csv) {
           state.csvUrl = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-          const dlBtn = document.getElementById("downloadBtn");
+        const dlBtn = document.getElementById("downloadBtn");
           dlBtn.disabled = false;
-          dlBtn.onclick = () => {
-            const a = document.createElement("a");
+        dlBtn.onclick = () => {
+          const a = document.createElement("a");
             a.href = state.csvUrl;
-            a.download = "flights_serpapi.csv";
-            a.click();
-          };
+          a.download = "flights_serpapi.csv";
+          a.click();
+        };
         }
       } catch (err) {
         console.error(err);
