@@ -246,6 +246,20 @@
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
+    .card-tags {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .source-pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(11,92,255,0.12);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
     .trip-dates {
       display: flex;
       align-items: center;
@@ -538,6 +552,11 @@
       ? "https://easy-flight-project.onrender.com"
       : "http://localhost:8000";
 
+    const SOURCE_LABELS = {
+      serpapi: "Google Flights",
+      aviationstack: "Aviationstack",
+    };
+
     const state = {
       csvUrl: null,
       iataCatalog: [],
@@ -545,6 +564,11 @@
       iataError: null,
       pickerTarget: null,
     };
+
+    function formatSourceLabel(source) {
+      if (!source) return null;
+      return SOURCE_LABELS[source.toLowerCase()] || source;
+    }
 
     function showStatus(text, tone = "idle") {
       const classes = {
@@ -594,18 +618,30 @@
         .map((r, index) => {
           const outboundDate = r.outbound_date || contextDates.outbound;
           const returnDate = r.return_date || contextDates.return;
+          const sourceLabel = formatSourceLabel(r.source);
+          const tagMarkup = `
+            <div class="card-tags">
+              <span class="tag">${r.stops > 0 ? `${r.stops} escale${r.stops > 1 ? "s" : ""}` : "Vol direct"}</span>
+              ${sourceLabel ? `<span class="source-pill">${sourceLabel}</span>` : ""}
+            </div>
+          `;
+          const metaParts = [
+            r.airlines || "Compagnie inconnue",
+            r.total_duration_min ? formatDuration(r.total_duration_min) : "Durée n.c.",
+          ];
+          if (sourceLabel) metaParts.push(`Source : ${sourceLabel}`);
+          const metaHtml = metaParts
+            .map((part, idx) => (idx === 0 ? `<span>${part}</span>` : `<span>•</span><span>${part}</span>`))
+            .join("");
+
           return `
             <article class="flight-card">
               <div class="price-row">
                 <div>
                   <div class="price">${r.price ?? "—"} ${r.currency || ""}</div>
-                  <div class="meta">
-                    <span>${r.airlines || "Compagnie inconnue"}</span>
-                    <span>•</span>
-                    <span>${r.total_duration_min ? formatDuration(r.total_duration_min) : "Durée n.c."}</span>
-                  </div>
+                  <div class="meta">${metaHtml}</div>
                 </div>
-                <span class="tag">${r.stops > 0 ? `${r.stops} escale${r.stops > 1 ? "s" : ""}` : "Vol direct"}</span>
+                ${tagMarkup}
               </div>
 
               <div class="trip-dates">

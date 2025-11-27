@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from .config import SERPAPI_KEY
-from .serpapi import search_offers
+from .serpapi import search_offers as search_serpapi_offers
+from .aviationstack import search_aviationstack_offers
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ class SearchResult(BaseModel):
     departure_token: Optional[str]
     lowest_price_insight: Optional[float]
     purchase_url: Optional[str]
+    source: Optional[str]
 
 
 class SearchResponse(BaseModel):
@@ -47,8 +49,28 @@ def search_flights(
     if not SERPAPI_KEY:
         raise HTTPException(status_code=500, detail="SERPAPI_KEY not configured on server")
 
-    results, count = search_offers(
+    combined: List[dict] = []
+
+    serp_results, _ = search_serpapi_offers(
         departure_id, arrival_id, outbound_date, return_date, currency, max_price, sort_by, top_n
     )
-    return {"results": results, "count": count}
+    for result in serp_results:
+        result["source"] = "serpapi"
+    combined.extend(serp_results)
+
+    try:
+        aviationstack_results = search_aviationstack_offers(
+            departure_id, arrival_id, outbound_date, currency, max_price, top_n
+        )
+        combined.extend(aviationstack_results)
+    except HTTPException as exc:
+        # Aviationstack est optionnel : on log mais on ne bloque pas la recherche.
+        print(f"⚠️ Aviationstack error: {exc.detail}")
+
+    if not combined:
+        return {"results": [], "count": 0}
+
+    combined.sort(key=lambda item: item.get("price") if item.get("price") is not None else float("inf"))
+    limited = combined[:top_n]
+    return {"results": limited, "count": len(combined)}
 
