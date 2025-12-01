@@ -449,20 +449,48 @@
       display: none !important;
     }
     @media (max-width: 640px) {
-      body { padding: 20px 12px 40px; }
-      .search-card { padding: 20px 16px; }
+      body { 
+        padding: 20px 12px 40px; 
+        overflow-x: hidden;
+      }
+      .container {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      .search-card { 
+        padding: 20px 14px; 
+        overflow-x: hidden;
+        max-width: 100%;
+      }
       .form-grid {
         grid-template-columns: 1fr;
         gap: 16px;
+        width: 100%;
+        max-width: 100%;
+      }
+      .form-grid > div {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
       }
       input, select {
         width: 100%;
         max-width: 100%;
+        min-width: 0;
         box-sizing: border-box;
+        padding: 12px 10px;
+      }
+      input[type="date"] {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
       }
       .input-with-picker {
         width: 100%;
         max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
       }
       .card-actions { flex-direction: column; }
       .book-link { width: 100%; }
