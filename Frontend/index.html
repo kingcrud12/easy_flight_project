@@ -458,9 +458,10 @@
         overflow-x: hidden;
       }
       .search-card { 
-        padding: 20px 14px; 
+        padding: 20px 12px; 
         overflow-x: hidden;
         max-width: 100%;
+        box-sizing: border-box;
       }
       .form-grid {
         grid-template-columns: 1fr;
@@ -473,18 +474,30 @@
         max-width: 100%;
         min-width: 0;
         box-sizing: border-box;
+        overflow: hidden;
+        position: relative;
       }
       input, select {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
+        width: calc(100% - 0px) !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
         box-sizing: border-box;
         padding: 12px 10px;
       }
       input[type="date"] {
+        width: calc(100% - 0px) !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box;
+        padding: 12px 10px;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+      label {
+        display: block;
         width: 100%;
         max-width: 100%;
-        min-width: 0;
+        box-sizing: border-box;
       }
       .input-with-picker {
         width: 100%;
