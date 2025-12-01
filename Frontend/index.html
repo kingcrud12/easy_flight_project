@@ -449,7 +449,21 @@
       display: none !important;
     }
     @media (max-width: 640px) {
-      .search-card { padding: 22px; }
+      body { padding: 20px 12px 40px; }
+      .search-card { padding: 20px 16px; }
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      input, select {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+      .input-with-picker {
+        width: 100%;
+        max-width: 100%;
+      }
       .card-actions { flex-direction: column; }
       .book-link { width: 100%; }
     }
